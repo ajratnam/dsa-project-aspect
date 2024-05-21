@@ -1,12 +1,13 @@
 package dsa.ajay;
 
-import org.aspectj.lang.Aspects;
-
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.List;
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.MethodProxy;
 
 public class TaskServer {
 
@@ -19,18 +20,26 @@ public class TaskServer {
                     System.out.println("Client connected");
 
                     // Create an instance of the target object (e.g., GlobalContext)
-                    GlobalContext targetObject = new GlobalContext(10);
-
-                    TaskAspect aspect = Aspects.aspectOf(TaskAspect.class);
-                    aspect.setTargetObject(targetObject);
+                    GlobalContext context = new GlobalContext(10);
+                    Enhancer enhancer = new Enhancer();
+                    enhancer.setSuperclass(GlobalContext.class);
+                    enhancer.setCallback(new MethodInterceptor() {
+                        @Override
+                        public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
+                            // Add the GenericTask to the tasks list without invoking the method
+                            context.getTasks().add(new GenericTask(context, method.getName(), method.getParameterTypes(), args));
+                            return null;
+                        }
+                    });
+                    GlobalContext targetObject = (GlobalContext) enhancer.create();
 
                     // Now, whenever you call a method on targetObject, a GenericTask will be automatically created and added to tasks
                     targetObject.performOperation(5, "Test");
                     targetObject.anotherMethod("Hello");
                     targetObject.yetAnotherMethod();
 
-                    // Get the tasks from the aspect
-                    List<GenericTask> tasks = aspect.getTasks();
+                    // Get the tasks from the context
+                    List<GenericTask> tasks = context.getTasks();
 
                     // Send the tasks
                     try (ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream())) {
