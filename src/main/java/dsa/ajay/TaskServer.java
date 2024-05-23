@@ -21,17 +21,7 @@ public class TaskServer {
 
                     // Create an instance of the target object (e.g., GlobalContext)
                     GlobalContext context = new GlobalContext(10);
-                    Enhancer enhancer = new Enhancer();
-                    enhancer.setSuperclass(GlobalContext.class);
-                    enhancer.setCallback(new MethodInterceptor() {
-                        @Override
-                        public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
-                            // Add the GenericTask to the tasks list without invoking the method
-                            context.getTasks().add(new GenericTask(context, method.getName(), method.getParameterTypes(), args));
-                            return null;
-                        }
-                    });
-                    GlobalContext targetObject = (GlobalContext) enhancer.create();
+                    GlobalContext targetObject = (GlobalContext) ObjectGenerator.generateTargetObject(context);
 
                     // Now, whenever you call a method on targetObject, a GenericTask will be automatically created and added to tasks
                     targetObject.performOperation(5, "Test");
