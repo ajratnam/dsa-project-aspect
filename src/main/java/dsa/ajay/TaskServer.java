@@ -21,8 +21,15 @@ public class TaskServer {
                 clients[clientCount] = serverSocket.accept();
                 clientStreams[clientCount] = new ObjectOutputStream(clients[clientCount].getOutputStream());
                 clientInputStreams[clientCount] = new ObjectInputStream(clients[clientCount].getInputStream());
-                System.out.println("Client connected");
-                clientCount++;
+
+
+                double duration = (double) clientInputStreams[clientCount].readObject();
+                System.out.println("Duration received from client " + (clientCount + 1) + ": " + duration);
+
+//                clientStreams[clientCount] = clientStream;
+
+
+                ++clientCount;
             }
 
             // Create an instance of the target object (e.g., GlobalContext)

@@ -14,7 +14,14 @@ public class TaskClient {
              ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream ois = new ObjectInputStream(socket.getInputStream())) {
 
+
             System.out.println("Connected to server");
+            System.out.println("------Executing benchmark------");
+
+           double duration = Benchmark.getNormalizedPerformanceScore();
+           oos.writeObject(duration);
+
+
 
             List<GenericTask> tasks = (List<GenericTask>) ois.readObject();
             System.out.println("Tasks received");
