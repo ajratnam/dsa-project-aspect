@@ -25,7 +25,7 @@ public class Benchmark {
         double averageDuration = (double) totalDuration / NUM_MEASUREMENT_RUNS;
 
         // Normalize to a 0-1 scale
-        return 1.0 / (1.0 + averageDuration);  // Higher score is better
+        return averageDuration / 100_000_000;
     }
 
     private static long runBenchmark() {
