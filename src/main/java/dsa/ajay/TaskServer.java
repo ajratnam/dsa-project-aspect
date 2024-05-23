@@ -1,13 +1,10 @@
 package dsa.ajay;
 
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.MethodProxy;
 
 public class TaskServer {
 
@@ -18,10 +15,12 @@ public class TaskServer {
             int clientCount = 0;
             Socket[] clients = new Socket[3];
             ObjectOutputStream[] clientStreams = new ObjectOutputStream[3];
+            ObjectInputStream[] clientInputStreams = new ObjectInputStream[3];
 
             while (clientCount < 3) {
                 clients[clientCount] = serverSocket.accept();
                 clientStreams[clientCount] = new ObjectOutputStream(clients[clientCount].getOutputStream());
+                clientInputStreams[clientCount] = new ObjectInputStream(clients[clientCount].getInputStream());
                 System.out.println("Client connected");
                 clientCount++;
             }
@@ -38,11 +37,17 @@ public class TaskServer {
             // Get the tasks from the context
             List<GenericTask> tasks = context.getTasks();
 
+            System.out.println();
+
             // Send the tasks
             for (int i = 0; i < 3; i++) {
                 clientStreams[i].writeObject(List.of(tasks.get(i)));
                 clientStreams[i].flush();
-                System.out.println("Task sent to client " + (i + 1));
+//                System.out.println("Task sent to client " + (i + 1));
+
+                // Receive the stdout from the client
+                String stdout = (String) clientInputStreams[i].readObject();
+                System.out.print(stdout);
             }
         } catch (Exception e) {
             e.printStackTrace();
