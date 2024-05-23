@@ -4,60 +4,72 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class TaskServer {
 
+    private static final List<Socket> clients = new ArrayList<>();
+    private static final List<ObjectOutputStream> clientStreams = new ArrayList<>();
+    private static final List<ObjectInputStream> clientInputStreams = new ArrayList<>();
+
     public static void main(String[] args) {
-        try (ServerSocket serverSocket = new ServerSocket(12345)) {
-            System.out.println("Server is listening on port 12345");
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
 
-            int clientCount = 0;
-            Socket[] clients = new Socket[3];
-            ObjectOutputStream[] clientStreams = new ObjectOutputStream[3];
-            ObjectInputStream[] clientInputStreams = new ObjectInputStream[3];
+        // Thread for accepting client connections
+        executorService.submit(() -> {
+            try (ServerSocket serverSocket = new ServerSocket(12345)) {
+                System.out.println("Server is listening on port 12345 for clients");
 
-            while (clientCount < 3) {
-                clients[clientCount] = serverSocket.accept();
-                clientStreams[clientCount] = new ObjectOutputStream(clients[clientCount].getOutputStream());
-                clientInputStreams[clientCount] = new ObjectInputStream(clients[clientCount].getInputStream());
+                while (true) {
+                    Socket clientSocket = serverSocket.accept();
+                    clients.add(clientSocket);
+                    clientStreams.add(new ObjectOutputStream(clientSocket.getOutputStream()));
+                    clientInputStreams.add(new ObjectInputStream(clientSocket.getInputStream()));
 
+                    double duration = (double) clientInputStreams.getLast().readObject();
+                    System.out.println("Duration received from client " + clients.toArray().length + ": " + duration);
 
-                double duration = (double) clientInputStreams[clientCount].readObject();
-                System.out.println("Duration received from client " + (clientCount + 1) + ": " + duration);
-
-//                clientStreams[clientCount] = clientStream;
-
-
-                ++clientCount;
+                    System.out.println("Client connected");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
+        });
 
-            // Create an instance of the target object (e.g., GlobalContext)
-            GlobalContext context = new GlobalContext(10);
-            GlobalContext targetObject = (GlobalContext) ObjectGenerator.generateTargetObject(context);
+        // Thread for accepting user connections
+        executorService.submit(() -> {
+            try (ServerSocket serverSocket = new ServerSocket(54321)) {
+                System.out.println("Server is listening on port 54321 for users");
 
-            // Now, whenever you call a method on targetObject, a GenericTask will be automatically created and added to tasks
-            targetObject.performOperation(5, "Test");
-            targetObject.anotherMethod("Hello");
-            targetObject.yetAnotherMethod();
+                while (true) {
+                    Socket userSocket = serverSocket.accept();
+                    ObjectOutputStream userOutputStream = new ObjectOutputStream(userSocket.getOutputStream());
+                    ObjectInputStream userInputStream = new ObjectInputStream(userSocket.getInputStream());
 
-            // Get the tasks from the context
-            List<GenericTask> tasks = context.getTasks();
+                    System.out.println("User connected");
 
-            System.out.println();
+                    // Receive tasks from user
+                    List<GenericTask> tasks = (List<GenericTask>) userInputStream.readObject();
 
-            // Send the tasks
-            for (int i = 0; i < 3; i++) {
-                clientStreams[i].writeObject(List.of(tasks.get(i)));
-                clientStreams[i].flush();
-//                System.out.println("Task sent to client " + (i + 1));
+                    // Distribute tasks among clients
+                    for (int i = 0; i < tasks.size(); i++) {
+                        clientStreams.get(i % clients.size()).writeObject(List.of(tasks.get(i)));
+                    }
 
-                // Receive the stdout from the client
-                String stdout = (String) clientInputStreams[i].readObject();
-                System.out.print(stdout);
+                    // Receive results from clients and send them back to the user
+                    for (int i = 0; i < tasks.size(); i++) {
+                        Object result = clientInputStreams.get(i % clients.size()).readObject();
+                        userOutputStream.writeObject(result);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        });
+
+        executorService.shutdown();
     }
 }
