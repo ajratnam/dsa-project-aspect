@@ -3,6 +3,8 @@ package dsa.ajay;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,15 +17,23 @@ public class TaskUser {
 
             System.out.println("Connected to server");
 
+            // Generate RSA key pair
+            KeyPair keyPair = RSAUtil.generateKeyPair();
+
+            // Send public key to the server
+            oos.writeObject(keyPair.getPublic());
+            System.out.println("Public key sent to server");
+
+            // Receive public key from server
+            PublicKey serverPublicKey = (PublicKey) ois.readObject();
+            System.out.println("Public key received from server");
+
             GlobalContext context = new GlobalContext(10);
             GlobalContext targetObject = (GlobalContext) ObjectGenerator.generateTargetObject(context);
-
-            // Now, whenever you call a method on targetObject, a GenericTask will be automatically created and added to tasks
             targetObject.performOperation(5, "Test");
             targetObject.anotherMethod("Hello");
             targetObject.yetAnotherMethod();
 
-            // Get the tasks from the context
             List<GenericTask> tasks = context.getTasks();
 
             // Send tasks to the server
@@ -32,7 +42,8 @@ public class TaskUser {
 
             // Receive results from the server
             for (int i = 0; i < tasks.size(); i++) {
-                Object result = ois.readObject();
+                byte[] encryptedResult = (byte[]) ois.readObject();
+                String result = RSAUtil.decrypt(encryptedResult, keyPair.getPrivate());
                 System.out.print(result);
             }
         } catch (Exception e) {

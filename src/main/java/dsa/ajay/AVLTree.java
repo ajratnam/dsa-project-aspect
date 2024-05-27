@@ -3,6 +3,8 @@ package dsa.ajay;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,12 +15,14 @@ class ClientNode {
     Socket clientSocket;
     ObjectOutputStream clientStream;
     ObjectInputStream clientInputStream;
+    PublicKey clientPublicKey;
 
-    ClientNode(double duration, Socket clientSocket, ObjectOutputStream clientStream, ObjectInputStream clientInputStream) {
+    ClientNode(double duration, Socket clientSocket, ObjectOutputStream clientStream, ObjectInputStream clientInputStream, PublicKey clientPublicKey) {
         this.duration = duration;
         this.clientSocket = clientSocket;
         this.clientStream = clientStream;
         this.clientInputStream = clientInputStream;
+        this.clientPublicKey = clientPublicKey;
         height = 1;
     }
 }
@@ -62,13 +66,13 @@ public class AVLTree {
         return height(N.left) - height(N.right);
     }
 
-    ClientNode insert(ClientNode node, double duration, Socket clientSocket, ObjectOutputStream clientStream, ObjectInputStream clientInputStream) {
+    ClientNode insert(ClientNode node, double duration, Socket clientSocket, ObjectOutputStream clientStream, ObjectInputStream clientInputStream, PublicKey clientPublicKey) {
         if (node == null)
-            return (new ClientNode(duration, clientSocket, clientStream, clientInputStream));
+            return (new ClientNode(duration, clientSocket, clientStream, clientInputStream, clientPublicKey));
         if (duration < node.duration)
-            node.left = insert(node.left, duration, clientSocket, clientStream, clientInputStream);
+            node.left = insert(node.left, duration, clientSocket, clientStream, clientInputStream, clientPublicKey);
         else if (duration > node.duration)
-            node.right = insert(node.right, duration, clientSocket, clientStream, clientInputStream);
+            node.right = insert(node.right, duration, clientSocket, clientStream, clientInputStream, clientPublicKey);
         else
             return node;
         node.height = 1 + max(height(node.left), height(node.right));

@@ -5,6 +5,9 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -13,9 +16,9 @@ public class TaskServer {
 
     private static final AVLTree clientsTree = new AVLTree();
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws NoSuchAlgorithmException {
         ExecutorService executorService = Executors.newFixedThreadPool(2);
-
+        KeyPair keyPair = RSAUtil.generateKeyPair();
         // Thread for accepting client connections
         executorService.submit(() -> {
             try (ServerSocket serverSocket = new ServerSocket(12345)) {
@@ -26,12 +29,20 @@ public class TaskServer {
                     ObjectOutputStream clientStream = new ObjectOutputStream(clientSocket.getOutputStream());
                     ObjectInputStream clientInputStream = new ObjectInputStream(clientSocket.getInputStream());
 
+                    // Send public key to the client
+                    clientStream.writeObject(keyPair.getPublic());
+                    System.out.println("Public key sent to client");
+
+                    // Receive public key from client
+                    PublicKey clientPublicKey = (PublicKey) clientInputStream.readObject();
+                    System.out.println("Public key received from client");
+
                     double duration = 0.0;
                     if (clientSocket.isConnected()) {
                         duration = (double) clientInputStream.readObject();
                         System.out.println("Duration received from client " + (clientsTree.root != null ? clientsTree.root.height : "0") + ": " + duration);
 
-                        clientsTree.root = clientsTree.insert(clientsTree.root, duration, clientSocket, clientStream, clientInputStream);
+                        clientsTree.root = clientsTree.insert(clientsTree.root, duration, clientSocket, clientStream, clientInputStream, clientPublicKey);
                         System.out.println("Client connected");
                     } else {
                         // Remove disconnected client
@@ -44,7 +55,6 @@ public class TaskServer {
         });
 
         // Thread for accepting user connections
-        // Thread for accepting user connections
         executorService.submit(() -> {
             try (ServerSocket serverSocket = new ServerSocket(54321)) {
                 System.out.println("Server is listening on port 54321 for users");
@@ -55,6 +65,9 @@ public class TaskServer {
                     ObjectInputStream userInputStream = new ObjectInputStream(userSocket.getInputStream());
 
                     System.out.println("User connected");
+
+                    PublicKey userKey = (PublicKey) userInputStream.readObject();
+                    userOutputStream.writeObject(keyPair.getPublic());
 
                     // Receive tasks from user
                     List<GenericTask> tasks = (List<GenericTask>) userInputStream.readObject();
@@ -98,8 +111,9 @@ public class TaskServer {
                             try {
                                 ClientNode clientNode = clients.get(clientIndex);
                                 if (clientNode.clientSocket.isConnected()) {
-                                    Object result = clientNode.clientInputStream.readObject();
-                                    userOutputStream.writeObject(result);
+                                    // Decrypt the received result
+                                    String result = RSAUtil.decrypt((byte[]) clientNode.clientInputStream.readObject(), keyPair.getPrivate());
+                                    userOutputStream.writeObject(RSAUtil.encrypt(result, userKey));
                                     resultReceived = true;
                                 } else {
                                     // Remove disconnected client

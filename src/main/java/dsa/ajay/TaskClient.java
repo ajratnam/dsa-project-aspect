@@ -5,6 +5,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.List;
 
 public class TaskClient {
@@ -17,9 +19,19 @@ public class TaskClient {
             System.out.println("Connected to server");
             System.out.println("------Executing benchmark------");
 
+            // Generate RSA key pair
+            KeyPair keyPair = RSAUtil.generateKeyPair();
+
+            // Send public key to the server
+            oos.writeObject(keyPair.getPublic());
+            System.out.println("Public key sent to server");
+
+            // Receive public key from server
+            PublicKey serverPublicKey = (PublicKey) ois.readObject();
+            System.out.println("Public key received from server");
+
             double duration = Benchmark.getNormalizedPerformanceScore();
             oos.writeObject(duration);
-
             while (true) {
                 List<GenericTask> tasks = (List<GenericTask>) ois.readObject();
                 System.out.println("Tasks received");
@@ -39,8 +51,9 @@ public class TaskClient {
                         System.out.flush();
                         System.setOut(old);
 
-                        // Send the stdout back to the server
-                        oos.writeObject(baos.toString());
+                        // Encrypt the stdout with server's public key and send back to the server
+                        byte[] encryptedOutput = RSAUtil.encrypt(baos.toString(), serverPublicKey);
+                        oos.writeObject(encryptedOutput);
                     } catch (Exception e) {
                         // Send the exception back to the server
                         oos.writeObject(e);
