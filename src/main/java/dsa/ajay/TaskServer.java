@@ -4,6 +4,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -29,10 +30,18 @@ public class TaskServer {
                     clientStreams.add(new ObjectOutputStream(clientSocket.getOutputStream()));
                     clientInputStreams.add(new ObjectInputStream(clientSocket.getInputStream()));
 
-                    double duration = (double) clientInputStreams.getLast().readObject();
-                    System.out.println("Duration received from client " + clients.toArray().length + ": " + duration);
+                    if (clientSocket.isConnected()) {
+                        double duration = (double) clientInputStreams.getLast().readObject();
+                        System.out.println("Duration received from client " + clients.toArray().length + ": " + duration);
 
-                    System.out.println("Client connected");
+                        System.out.println("Client connected");
+                    } else {
+                        // Remove disconnected client
+                        int index = clients.indexOf(clientSocket);
+                        clients.remove(index);
+                        clientStreams.remove(index);
+                        clientInputStreams.remove(index);
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -56,7 +65,27 @@ public class TaskServer {
 
                     // Distribute tasks among clients
                     for (int i = 0; i < tasks.size(); i++) {
-                        clientStreams.get(i % clients.size()).writeObject(List.of(tasks.get(i)));
+                        boolean taskSent = false;
+                        while (!taskSent) {
+                            try {
+                                if (clients.get(i % clients.size()).isConnected()) {
+                                    clientStreams.get(i % clients.size()).writeObject(List.of(tasks.get(i)));
+                                    taskSent = true;
+                                } else {
+                                    // Remove disconnected client
+                                    int index = i % clients.size();
+                                    clients.remove(index);
+                                    clientStreams.remove(index);
+                                    clientInputStreams.remove(index);
+                                }
+                            } catch (SocketException e) {
+                                // Remove disconnected client
+                                int index = i % clients.size();
+                                clients.remove(index);
+                                clientStreams.remove(index);
+                                clientInputStreams.remove(index);
+                            }
+                        }
                     }
 
                     // Receive results from clients and send them back to the user
