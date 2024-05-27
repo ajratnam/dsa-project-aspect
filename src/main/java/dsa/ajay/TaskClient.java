@@ -21,8 +21,6 @@ public class TaskClient {
            double duration = Benchmark.getNormalizedPerformanceScore();
            oos.writeObject(duration);
 
-
-
             List<GenericTask> tasks = (List<GenericTask>) ois.readObject();
             System.out.println("Tasks received");
 
