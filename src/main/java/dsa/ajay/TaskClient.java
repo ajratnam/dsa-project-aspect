@@ -14,37 +14,37 @@ public class TaskClient {
              ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream ois = new ObjectInputStream(socket.getInputStream())) {
 
-
             System.out.println("Connected to server");
             System.out.println("------Executing benchmark------");
 
-           double duration = Benchmark.getNormalizedPerformanceScore();
-           oos.writeObject(duration);
+            double duration = Benchmark.getNormalizedPerformanceScore();
+            oos.writeObject(duration);
 
-            List<GenericTask> tasks = (List<GenericTask>) ois.readObject();
-            System.out.println("Tasks received");
+            while (true) {
+                List<GenericTask> tasks = (List<GenericTask>) ois.readObject();
+                System.out.println("Tasks received");
+                for (Task task : tasks) {
+                    try {
+                        // Redirect stdout to a ByteArrayOutputStream
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        PrintStream ps = new PrintStream(baos);
+                        PrintStream old = System.out;
+                        System.setOut(ps);
 
-            for (Task task : tasks) {
-                try {
-                    // Redirect stdout to a ByteArrayOutputStream
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    PrintStream ps = new PrintStream(baos);
-                    PrintStream old = System.out;
-                    System.setOut(ps);
+                        // Execute the task
+                        Object result = task.execute();
+                        System.out.println("Task execution result: " + result);
 
-                    // Execute the task
-                    Object result = task.execute();
-                    System.out.println("Task execution result: " + result);
+                        // Reset stdout
+                        System.out.flush();
+                        System.setOut(old);
 
-                    // Reset stdout
-                    System.out.flush();
-                    System.setOut(old);
-
-                    // Send the stdout back to the server
-                    oos.writeObject(baos.toString());
-                } catch (Exception e) {
-                    // Send the exception back to the server
-                    oos.writeObject(e);
+                        // Send the stdout back to the server
+                        oos.writeObject(baos.toString());
+                    } catch (Exception e) {
+                        // Send the exception back to the server
+                        oos.writeObject(e);
+                    }
                 }
             }
         } catch (Exception e) {
