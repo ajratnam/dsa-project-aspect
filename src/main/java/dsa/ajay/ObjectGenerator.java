@@ -13,7 +13,6 @@ public class ObjectGenerator {
         enhancer.setCallback(new MethodInterceptor() {
             @Override
             public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
-                // Add the GenericTask to the tasks list without invoking the method
                 ((BaseContext) givenObject).getTasks().add(new GenericTask(givenObject, method.getName(), method.getParameterTypes(), args));
                 return null;
             }

@@ -17,14 +17,11 @@ public class TaskUser {
 
             System.out.println("Connected to server");
 
-            // Generate RSA key pair
             KeyPair keyPair = RSAUtil.generateKeyPair();
 
-            // Send public key to the server
             oos.writeObject(keyPair.getPublic());
             System.out.println("Public key sent to server");
 
-            // Receive public key from server
             PublicKey serverPublicKey = (PublicKey) ois.readObject();
             System.out.println("Public key received from server");
 
@@ -36,11 +33,9 @@ public class TaskUser {
 
             List<GenericTask> tasks = context.getTasks();
 
-            // Send tasks to the server
             oos.writeObject(tasks);
             System.out.println("Tasks sent\n");
 
-            // Receive results from the server
             for (int i = 0; i < tasks.size(); i++) {
                 byte[] encryptedResult = (byte[]) ois.readObject();
                 String result = RSAUtil.decrypt(encryptedResult, keyPair.getPrivate());

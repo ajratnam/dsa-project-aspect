@@ -10,21 +10,17 @@ public class Benchmark {
     private static final int NUM_MEASUREMENT_RUNS = 10;
 
 
-
     public static double getNormalizedPerformanceScore() {
-        // Warm-up phase
         for (int i = 0; i < NUM_WARMUP_RUNS; i++) {
             runBenchmark();
         }
 
-        // Measurement phase
         long totalDuration = 0;
         for (int i = 0; i < NUM_MEASUREMENT_RUNS; i++) {
             totalDuration += runBenchmark();
         }
         double averageDuration = (double) totalDuration / NUM_MEASUREMENT_RUNS;
 
-        // Normalize to a 0-1 scale
         return averageDuration / 100_000_000;
     }
 
@@ -32,7 +28,7 @@ public class Benchmark {
         int[] array = generateRandomArray(ARRAY_SIZE);
 
         long startTime = System.nanoTime();
-        Arrays.sort(array); // Task to measure
+        Arrays.sort(array);
         long endTime = System.nanoTime();
 
         return endTime - startTime;
