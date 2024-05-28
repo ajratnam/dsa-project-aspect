@@ -18,6 +18,7 @@ public class TaskUser {
             System.out.println("Connected to server");
 
             KeyPair keyPair = RSAUtil.generateKeyPair();
+            System.out.println("Key pair generated");
 
             oos.writeObject(keyPair.getPublic());
             System.out.println("Public key sent to server");
@@ -27,6 +28,9 @@ public class TaskUser {
 
             GlobalContext context = new GlobalContext(10);
             GlobalContext targetObject = (GlobalContext) ObjectGenerator.generateTargetObject(context);
+            System.out.println("Proxy object generated");
+//            targetObject = context;
+
             targetObject.performOperation(5, "Test");
             targetObject.anotherMethod("Hello");
             targetObject.yetAnotherMethod();
@@ -34,7 +38,7 @@ public class TaskUser {
             List<GenericTask> tasks = context.getTasks();
 
             oos.writeObject(tasks);
-            System.out.println("Tasks sent\n");
+            System.out.println("Tasks sent to server\n");
 
             for (int i = 0; i < tasks.size(); i++) {
                 byte[] encryptedResult = (byte[]) ois.readObject();
@@ -42,6 +46,7 @@ public class TaskUser {
                 System.out.print(result);
             }
         } catch (Exception e) {
+            System.out.println("Exception occurred: " + e.getMessage());
             e.printStackTrace();
         }
     }

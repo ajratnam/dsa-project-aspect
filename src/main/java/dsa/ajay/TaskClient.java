@@ -20,6 +20,7 @@ public class TaskClient {
             System.out.println("------Executing benchmark------");
 
             KeyPair keyPair = RSAUtil.generateKeyPair();
+            System.out.println("Key pair generated");
 
             oos.writeObject(keyPair.getPublic());
             System.out.println("Public key sent to server");
@@ -28,10 +29,13 @@ public class TaskClient {
             System.out.println("Public key received from server");
 
             double duration = Benchmark.getNormalizedPerformanceScore();
+            System.out.println("Benchmark score calculated: " + duration);
             oos.writeObject(duration);
+            System.out.println("Benchmark score sent to server");
+
             while (true) {
                 List<GenericTask> tasks = (List<GenericTask>) ois.readObject();
-                System.out.println("Tasks received");
+                System.out.println("Tasks received, count: " + tasks.size());
                 for (Task task : tasks) {
                     try {
                         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -46,13 +50,17 @@ public class TaskClient {
                         System.setOut(old);
 
                         byte[] encryptedOutput = RSAUtil.encrypt(baos.toString(), serverPublicKey);
+                        System.out.println("Output encrypted");
                         oos.writeObject(encryptedOutput);
+                        System.out.println("Encrypted output sent to server");
                     } catch (Exception e) {
+                        System.out.println("Exception occurred during task execution: " + e.getMessage());
                         oos.writeObject(e);
                     }
                 }
             }
         } catch (Exception e) {
+            System.out.println("Exception occurred: " + e.getMessage());
             e.printStackTrace();
         }
     }
