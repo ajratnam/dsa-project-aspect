@@ -15,6 +15,8 @@ public class TaskUser {
              ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream ois = new ObjectInputStream(socket.getInputStream())) {
 
+            long startTime = System.currentTimeMillis() ;
+
             System.out.println("Connected to server");
 
             KeyPair keyPair = RSAUtil.generateKeyPair();
@@ -29,11 +31,11 @@ public class TaskUser {
             GlobalContext context = new GlobalContext(10);
             GlobalContext targetObject = (GlobalContext) ObjectGenerator.generateTargetObject(context);
             System.out.println("Proxy object generated");
-//            targetObject = context;
+            targetObject = context;
 
-            targetObject.performOperation(5, "Test");
-            targetObject.anotherMethod("Hello");
-            targetObject.yetAnotherMethod();
+            targetObject.calculateAverageViews("IN");
+            targetObject.calculateAverageViews("US");
+            targetObject.calculateAverageViewsOfChannel("GB", "Novara Media");
 
             List<GenericTask> tasks = context.getTasks();
 
@@ -45,6 +47,9 @@ public class TaskUser {
                 String result = RSAUtil.decrypt(encryptedResult, keyPair.getPrivate());
                 System.out.print(result);
             }
+
+            long endTime = System.currentTimeMillis();
+            System.out.println("Total time taken - " + (endTime - startTime) / 1000.0);
         } catch (Exception e) {
             System.out.println("Exception occurred: " + e.getMessage());
             e.printStackTrace();

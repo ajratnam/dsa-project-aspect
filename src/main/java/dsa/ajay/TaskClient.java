@@ -44,7 +44,7 @@ public class TaskClient {
                         System.setOut(ps);
 
                         Object result = task.execute();
-                        System.out.println("Task execution result: " + result);
+//                        System.out.println("Task execution result: " + result);
 
                         System.out.flush();
                         System.setOut(old);
